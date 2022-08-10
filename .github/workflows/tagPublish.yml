@@ -6,6 +6,16 @@ on:
       - '*'
 
 jobs:
+  github-release:
+    name: Create Github release page
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Github release page
+        # Create the release page first or the nodejs artifacts upload will fail
+        run: gh release create ${{ github.event.release.tag_name }} --draft --notes "Auto created by tagPublish workflow."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   wheel:
     name: python${{ matrix.python-version }}-${{ matrix.platform.python-architecture }} ${{ matrix.platform.os }}
     runs-on: ${{ matrix.platform.os }}
@@ -58,7 +68,7 @@ jobs:
     # Prevent a situation where native build fails and a npm package is uploaded.
     needs: [nodejs-github-native]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.release.tag_name }}
       - name: Set release version
@@ -111,7 +121,7 @@ jobs:
           # Would like to have aarch64 support, but actions does not provide these yet.
           # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.release.tag_name }}
       - name: Set release version
@@ -165,9 +175,6 @@ jobs:
         working-directory: ./nodejs
         # This will make a node-pre-gyp package.
         run: npx node-pre-gyp package
-      - name: Create Github release page
-        # Create the release page first or the following upload will fail
-        run: gh release create ${{ env.RELEASE_VERSION }} --draft --notes "Auto created by tagPublish workflow."
       - name: Upload to Github releases
         working-directory: ./nodejs
         # Use bash, even on Windows to make find available
